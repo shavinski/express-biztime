@@ -41,6 +41,10 @@ router.get('/:code', async function (req, res, next) {
 
     const company = result.rows[0];
 
+    if(!company){
+        throw new NotFoundError();
+    }
+
     return res.json({ company });
 });
 
@@ -100,25 +104,20 @@ router.patch('/:code', async function (req, res, next) {
 router.delete('/:code', async function (req, res, next) {
 
     const company = await db.query(`
-        SELECT code, name, description
-            FROM companies
+        SELECT FROM companies
             WHERE code = $1`,
         [req.params.code]
     );
 
-    //console.log(company.rows, "logic(!company)", !company.rows[0] )
     if(!company.rows[0]){
         throw new NotFoundError();
     }
-
 
     await db.query(`
         DELETE FROM companies
             WHERE code = $1`,
         [req.params.code]
     );
-
-
 
     return res.json({ status: "deleted"});
 });
