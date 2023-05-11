@@ -31,22 +31,41 @@ router.get('/', async function (req, res, next) {
 });
 
 /** GET /companies/[code]
- * Return obj of company: {company: {code, name, description}}
+ * Return obj of company:
+ * {company:
+ *      {code, name, description,
+ *      invoices: [id,...]
+ *      }
+ * }
  */
 
 router.get('/:code', async function (req, res, next) {
-    const result = await db.query(`
+
+    const code = req.params.code;
+
+    const companyResult = await db.query(`
         SELECT code, name, description
             FROM companies
             WHERE code = $1`,
-        [req.params.code]
+        [code]
     );
 
-    const company = result.rows[0];
+    const company = companyResult.rows[0];
 
     if (!company) {
         throw new NotFoundError();
     }
+
+    const invoicesResult = await db.query(`
+        SELECT comp_code, id
+            FROM invoices
+            WHERE comp_code = $1`,
+        [code]
+    );
+
+    const invoices = invoicesResult.rows;
+
+    company.invoices = invoices.map(invoice => invoice.id);
 
     return res.json({ company });
 });
@@ -73,14 +92,14 @@ router.post('/', async function (req, res, next) {
             throw new BadRequestError();
         }
     }
-    
+
     const company = result.rows[0];
 
     return res.status(201).json({ company });
 });
 
 /**
- * PUT /companies Edit a company.
+ * PATCH /companies Edit a company.
  * Accepts JSON like: {name, description}
  * Returns obj of updates company: {company: {code, name, description}}
  */
@@ -88,6 +107,7 @@ router.post('/', async function (req, res, next) {
 router.patch('/:code', async function (req, res, next) {
     if (!req.body) throw new BadRequestError();
 
+    const code = req.params.code;
     const { name, description } = req.body;
 
     const result = await db.query(`
@@ -96,7 +116,7 @@ router.patch('/:code', async function (req, res, next) {
                 description=$3
             WHERE code = $1
             RETURNING code, name, description`,
-        [req.params.code, name, description]
+        [code, name, description]
     );
 
     const company = result.rows[0];
@@ -115,11 +135,13 @@ router.patch('/:code', async function (req, res, next) {
 
 router.delete('/:code', async function (req, res, next) {
 
+    const code = req.params.code;
+
     const result = await db.query(`
         DELETE FROM companies
             WHERE code = $1
             RETURNING *`,
-        [req.params.code]
+        [code]
     );
 
     const company = result.rows[0];
