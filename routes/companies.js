@@ -103,21 +103,20 @@ router.patch('/:code', async function (req, res, next) {
 
 router.delete('/:code', async function (req, res, next) {
 
-    const company = await db.query(`
-        SELECT FROM companies
-            WHERE code = $1`,
-        [req.params.code]
-    );
-
     if(!company.rows[0]){
         throw new NotFoundError();
     }
 
-    await db.query(`
+    const result = await db.query(`
         DELETE FROM companies
-            WHERE code = $1`,
+            WHERE code = $1
+            RETURNING code`,
         [req.params.code]
     );
+
+    if (!result) {
+        throw new NotFoundError();
+    }
 
     return res.json({ status: "deleted"});
 });
