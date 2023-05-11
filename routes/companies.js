@@ -61,7 +61,22 @@ router.post('/', async function (req, res, next) {
     if (!req.body) throw new BadRequestError();
 
     const { code, name, description } = req.body;
+    
+    // TODO: wrap in try catch, see if duplicate key pops up in the error message
+    // throw a bad request error (400)
+    const checkCompany = await db.query(`
+        SELECT code, name, description
+            FROM companies
+            WHERE code = $1`,
+        [code]
+    );
 
+    const checkExist = checkCompany.rows[0]
+
+    if (checkExist) {
+        throw new BadRequestError();
+    }
+    
     const result = await db.query(`
         INSERT INTO companies (code, name, description)
             VALUES ($1 , $2, $3)
@@ -95,6 +110,10 @@ router.patch('/:code', async function (req, res, next) {
     );
 
     const company = result.rows[0];
+
+    if (!company) {
+        throw new NotFoundError();
+    }
 
     return res.json({ company });
 });
