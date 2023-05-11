@@ -14,6 +14,8 @@ const db = require("../db");
 const app = require("../app");
 const router = new express.Router();
 
+
+
 /** GET /companies
  * Returns list of companies, like: {companies: [{code, name}, ...]}
 */
@@ -31,6 +33,7 @@ router.get('/', async function (req, res, next) {
 /** GET /companies/[code]
  * Return obj of company: {company: {code, name, description}}
  */
+
 router.get('/:code', async function (req, res, next) {
     const result = await db.query(`
         SELECT code, name, description
@@ -41,7 +44,7 @@ router.get('/:code', async function (req, res, next) {
 
     const company = result.rows[0];
 
-    if(!company){
+    if (!company) {
         throw new NotFoundError();
     }
 
@@ -80,7 +83,7 @@ router.post('/', async function (req, res, next) {
 router.patch('/:code', async function (req, res, next) {
     if (!req.body) throw new BadRequestError();
 
-    const {name, description } = req.body;
+    const { name, description } = req.body;
 
     const result = await db.query(`
         UPDATE companies
@@ -103,22 +106,20 @@ router.patch('/:code', async function (req, res, next) {
 
 router.delete('/:code', async function (req, res, next) {
 
-    if(!company.rows[0]){
-        throw new NotFoundError();
-    }
-
     const result = await db.query(`
         DELETE FROM companies
             WHERE code = $1
-            RETURNING code`,
+            RETURNING *`,
         [req.params.code]
     );
 
-    if (!result) {
+    const company = result.rows[0];
+
+    if (!company) {
         throw new NotFoundError();
     }
 
-    return res.json({ status: "deleted"});
+    return res.json({ status: "deleted" });
 });
 
 module.exports = router;
