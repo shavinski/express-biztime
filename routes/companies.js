@@ -81,8 +81,14 @@ router.post('/', async function (req, res, next) {
 
     const { code, name, description } = req.body;
 
+    if(!code || !name || !description) {
+        throw new BadRequestError();
+    }
+
+    let result;
+
     try {
-        const result = await db.query(`
+        result = await db.query(`
         INSERT INTO companies (code, name, description)
             VALUES ($1 , $2, $3)
             RETURNING code, name, description`,
